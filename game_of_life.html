@@ -1,72 +1,193 @@
 <!DOCTYPE html>
 	<head>
 		<style type="text/css">
+			body{
+				margin: 0; 
+			}
+			#container{
+				overflow: hidden;
+				height: 100%;
+			}
 			#settingsContainer{
-				width: 100%; 
-				height: 30px;
-				display: flex;
+				width: 500px; 
+				height: 50px;
+				background-color: aquamarine;
 			}
 			#tileSizeValueInputContainer{
 				float: left;
 				width: 150px;
 			}
-			#startButtonContainer{
+			#buttonContainer{
 				padding: 7px 10px 10px 5px;
 				float: left;
 			}
-			#startButton{
+			#createLifeGridButton{
 				height: 25px;
-				width: 60px;
+				width: 150px;
+			}
+			#startLifeButton{
+				height: 25px;
+				width: 150px;
 			}
 			#tableID{
 				width: 100%; 
 			}
+			#tableContainer{
+				display: inline-block;
+			}
+			table{
+				border-collapse: collapse;
+			}
+			table, tr, td{
+				border: 1px solid black;
+			}
 		</style>	
 	</head>
 	<body>
-		<div id="settingContainer">
-			<div id="tileSizeValueInputContainer">
-				<div id="tileSizeText"></div>
-				<div id="tileSizeRangeContainer">
-					<input id="tileSizeInput" type="range" min="5" max="30" value="30"/>
+		<div id="container">
+			<div id="settingsContainer">
+				<div id="tileSizeValueInputContainer">
+					<div id="tileSizeText"></div>
+					<div id="tileSizeRangeContainer">
+						<input id="tileSizeInput" type="range" min="5" max="30" value="30"/>
+					</div>
+				</div>
+				<div id="buttonContainer">
+					<button id="createLifeGridButton" type="button">Create Life Grid table</button>
+					<button id="startLifeButton" type="button" disabled>Start life!</button>
 				</div>
 			</div>
-			<div id="startButtonContainer">
-				<button id="startButton" type="button">Start</button>
+			<div id="tableContainer">
 			</div>
-		</div>
-		<div id="tableContainer">
 		</div>
 		<script>
 			var tileSizeValue  = document.getElementById("tileSizeInput");
 			var tileSizeText   = document.getElementById("tileSizeText");
-			var startButton    = document.getElementById("startButton");
-			var tableContainer = document.getElementById("tableContainer"); 
-			var tableID		   = "lifeTable";
+			var createLifeGridButton    = document.getElementById("createLifeGridButton");
+			var startLifeButton    = document.getElementById("startLifeButton");
+			var tableContainer = document.getElementById("tableContainer");
+			var lifeGrid      = [];
+			var tableDimensions = {};
 			tileSizeValue.oninput = function(){
 				tileSizeText.innerHTML = "Tile size:" + tileSizeValue.value + "px";
 			}
 			
-			startButton.onclick = function(){
-				console.log("Starting...");
-				createCanvasTable();
+			createLifeGridButton.onclick = function(){
+				console.log("Creating table...");
+				tableDimensions = createTable();
+				console.log("Creating life array");
+				lifeGrid = createLifeArray(tableDimensions);
+				startLifeButton.disabled = false;
+			}
+			
+			document.addEventListener("click", function(e){
+				var row = 0;
+				var column = 0;
+				var id = e.target.id;
+				var gridCoordinates = id.split("_");
+				console.log(gridCoordinates);
+				if(gridCoordinates.length > 1){
+					row = gridCoordinates[0];
+					column = gridCoordinates[1];
+					document.getElementById(id).setAttribute("style", "background-color: black;");
+					lifeGrid[row][column].state = "alive";
+				}
+			});
+			
+			startLifeButton.onclick = function(){
+				window.setInterval(function(){
+					var lifeGridCopy = lifeGrid;
+					for(i = 0; i < lifeGrid.length; i++){
+						for(j = 0; j < lifeGrid[i].length; i++){
+							var newCellState = "";
+							if(lifeGrid[i][j].state == "alive"){
+								if(checkIfCellDies(i, j)){
+									
+								}else if(checkIfCellStaysAlive(i, j)){
+									
+								}else{ //This should never run :D
+									// Not sure what to do in this case... CIE CELL DIE!!!
+								}
+							}else if(lifeGrid[i][j].state == "dead"){
+								if(checkIfCellBecomesAlive(i, j)){
+									
+								}else{ //This should never run :D
+									// Not sure what to do in this case... CIE CELL DIE!!!
+								}
+							}
+						}
+					}
+				}, 1000);
+			}
+			
+			function checkIfCellDies(row, column){
+				
+			}
+			
+			function checkIfCellBecomesAlive(row, column){
+				
+			}
+			
+			function checkIfCellStaysAlive(row, column){
+				
 			}
 			
 			window.onload = function(){
 				tileSizeText.innerHTML = "Tile size:" + tileSizeValue.value + "px";
 			}
 
-			function createCanvasTable(){
-				// var table = document.createElement("table");
-				// var tableRow = document.createElement("tr");
-				// var tableRowCell = document.createElement("td"); 
-				// table.setAttribute("id", tableID);
-				// table.setAttribute("border", "1");
-				
-				// tableRow.appendChild(tableRowCell);
-				// table.appendChild(tableRow);
-				
-				// tableContainer.appendChild(table);
+			function createTable(){
+				var table = document.createElement("table");
+				var tableRow = document.createElement("tr");
+				var tableRowCell = document.createElement("td"); 
+				var tableMeasurements = setTableDivHeight();
+				var cellsWide = Math.floor(tableMeasurements.width / tileSizeValue.value);
+				var cellsHigh = Math.floor(tableMeasurements.height / tileSizeValue.value);
+				for(i = 0; i < cellsHigh; i++){
+					for(j = 0; j < cellsWide; j++){
+						tableRowCell.setAttribute("id", i + "_" + j);
+						tableRowCell.setAttribute("height", tileSizeValue.value);
+						tableRowCell.setAttribute("width", tileSizeValue.value);
+						tableRow.appendChild(tableRowCell);
+						tableRowCell = document.createElement("td"); 
+					}
+					table.appendChild(tableRow);
+					tableRow = document.createElement("tr");
+				}
+			 	document.getElementById("tableContainer").innerHTML = table.outerHTML;
+				 return {
+					 rows: cellsHigh,
+					 columns: cellsWide
+				 }
+			}
+			
+			function createLifeArray(tableDimensions){
+				var lifeCell = {};
+				var lifeRow = [];
+				var lifeGrid = [];
+				for(i = 0; i < tableDimensions.rows; i++){
+					for(j = 0; j < tableDimensions.columns; j++){
+						lifeCell = {"state": "dead"}
+						lifeRow.push(lifeCell);
+					}
+					lifeGrid.push(lifeRow);
+					lifeRow = [];
+				}
+				return lifeGrid;
+			}
+			
+			function setTableDivHeight(){
+				var containerDivHeight = document.body.scrollHeight;
+				var settingsDivHeight = document.getElementById("settingsContainer").clientHeight;
+				var tableHeight = containerDivHeight - settingsDivHeight;
+				var tableWidth = document.body.scrollWidth;
+				document.getElementById("tableContainer").setAttribute(
+					"style", 
+						"height:" + tableHeight + "px; width:" + tableWidth + "px;");
+				return {
+					height: tableHeight,
+					width: tableWidth
+				}
 			}
 		</script>
 	</body>
