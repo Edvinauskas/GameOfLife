@@ -85,7 +85,6 @@
 				var column = 0;
 				var id = e.target.id;
 				var gridCoordinates = id.split("_");
-				console.log(gridCoordinates);
 				if(gridCoordinates.length > 1){
 					row = gridCoordinates[0];
 					column = gridCoordinates[1];
@@ -96,40 +95,87 @@
 			
 			startLifeButton.onclick = function(){
 				window.setInterval(function(){
-					var lifeGridCopy = lifeGrid;
+					var lifeGridCopy = createLifeArray(tableDimensions);
 					for(i = 0; i < lifeGrid.length; i++){
-						for(j = 0; j < lifeGrid[i].length; i++){
-							var newCellState = "";
+						for(j = 0; j < lifeGrid[i].length; j++){
+							var neighborCount = countCellNeighbors(i, j);
+							console.log(neighborCount);
 							if(lifeGrid[i][j].state == "alive"){
-								if(checkIfCellDies(i, j)){
-									
-								}else if(checkIfCellStaysAlive(i, j)){
-									
-								}else{ //This should never run :D
-									// Not sure what to do in this case... CIE CELL DIE!!!
+								if(neighborCount < 2){
+									//Dies
+									lifeGridCopy[i][j].state = "dead";
+									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
+								}else if((neighborCount == 2) || (neighborCount == 3)){
+									//Lives
+									lifeGridCopy[i][j].state = "alive";
+									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
+								}else if(neighborCount > 3){
+									//Dies
+									lifeGridCopy[i][j].state = "dead";
+									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
 								}
 							}else if(lifeGrid[i][j].state == "dead"){
-								if(checkIfCellBecomesAlive(i, j)){
-									
-								}else{ //This should never run :D
-									// Not sure what to do in this case... CIE CELL DIE!!!
+								if(neighborCount == 3){
+									//Becomes alive
+									lifeGridCopy[i][j].state = "alive";
+									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
 								}
 							}
 						}
 					}
-				}, 1000);
+					lifeGrid = lifeGridCopy.slice();
+					for(i = 0; i < lifeGrid.length; i++){
+						for(j = 0; j < lifeGrid[i].length; j++){
+							if(lifeGrid[i][j].state == "alive"){
+								document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
+							}else if(lifeGrid[i][j].state == "dead"){
+								document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
+							}
+						}
+					}
+				}, 200);
 			}
 			
-			function checkIfCellDies(row, column){
-				
+			function countCellNeighbors(row, column){
+				var neighbors = 0;
+				if(checkIndex(row - 1, column)){
+					if(lifeGrid[row - 1][column].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row - 1, column + 1)){
+					if(lifeGrid[row - 1][column + 1].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row, column + 1)){
+					if(lifeGrid[row][column + 1].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row + 1, column + 1)){
+					if(lifeGrid[row + 1][column + 1].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row + 1, column)){
+					if(lifeGrid[row + 1][column].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row + 1, column - 1)){
+					if(lifeGrid[row + 1][column - 1].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row, column - 1)){
+					if(lifeGrid[row][column - 1].state == "alive"){ neighbors += 1; }
+				}
+				if(checkIndex(row - 1, column - 1)){
+					if(lifeGrid[row - 1][column - 1].state == "alive"){ neighbors += 1; }
+				}
+				return neighbors;
 			}
 			
-			function checkIfCellBecomesAlive(row, column){
-				
-			}
-			
-			function checkIfCellStaysAlive(row, column){
-				
+			function checkIndex(row, column){
+				if(row >= 0 && row < lifeGrid.length){
+					if(column >= 0 && column < lifeGrid[row].length){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					return false;
+				}
+				return false;
 			}
 			
 			window.onload = function(){
