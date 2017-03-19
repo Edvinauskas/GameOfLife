@@ -7,18 +7,32 @@
 			#container{
 				overflow: hidden;
 				height: 100%;
+				font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
 			}
 			#settingsContainer{
-				width: 500px; 
-				height: 50px;
-				background-color: aquamarine;
+				width: 100%; 
+				overflow: hidden;
+				background-color: steelblue;
 			}
-			#tileSizeValueInputContainer{
+			#tileSizeText{
+				text-align: center;
+				color: white;
+			}
+			#tileSizeRangeInputInputContainer{
 				float: left;
-				width: 150px;
+				padding: 7px;
+			}
+			#lifeSpeedValueInputContainer{
+				float: left;
+				padding: 7px;
+			}
+			#lifeSpeedText{
+				text-align: center;
+				color: white;
 			}
 			#buttonContainer{
-				padding: 7px 10px 10px 5px;
+				vertical-align: center;
+				padding: 13px;
 				float: left;
 			}
 			#createLifeGridButton{
@@ -26,6 +40,10 @@
 				width: 150px;
 			}
 			#startLifeButton{
+				height: 25px;
+				width: 150px;
+			}
+			#stopLifeButton{
 				height: 25px;
 				width: 150px;
 			}
@@ -46,44 +64,60 @@
 	<body>
 		<div id="container">
 			<div id="settingsContainer">
-				<div id="tileSizeValueInputContainer">
+				<div id="tileSizeRangeInputInputContainer">
 					<div id="tileSizeText"></div>
 					<div id="tileSizeRangeContainer">
 						<input id="tileSizeInput" type="range" min="5" max="30" value="30"/>
 					</div>
 				</div>
+				<div id="lifeSpeedValueInputContainer">
+					<div id="lifeSpeedText"></div>
+					<input id="lifeSpeedInput" type="range" min="100" max="5000" value="1000"/>
+				</div>
 				<div id="buttonContainer">
 					<button id="createLifeGridButton" type="button">Create Life Grid table</button>
 					<button id="startLifeButton" type="button" disabled>Start life!</button>
+					<button id="stopLifeButton" type="button" disabled>Stop life!</button>
 				</div>
 			</div>
 			<div id="tableContainer">
 			</div>
 		</div>
 		<script>
-			var tileSizeValue  = document.getElementById("tileSizeInput");
+			var tileSizeRangeInput  = document.getElementById("tileSizeInput");
 			var tileSizeText   = document.getElementById("tileSizeText");
+			var lifeSpeedText   = document.getElementById("lifeSpeedText");
+			var lifeSpeedRange   = document.getElementById("lifeSpeedInput");
 			var createLifeGridButton    = document.getElementById("createLifeGridButton");
 			var startLifeButton    = document.getElementById("startLifeButton");
+			var stopLifeButton = document.getElementById("stopLifeButton");
 			var tableContainer = document.getElementById("tableContainer");
 			var lifeGrid      = [];
 			var tableDimensions = {};
-			tileSizeValue.oninput = function(){
-				tileSizeText.innerHTML = "Tile size:" + tileSizeValue.value + "px";
+			var lifeSpeed;
+			var stop = false;
+
+			tileSizeRangeInput.oninput = function(){
+				tileSizeText.innerHTML = "Tile size: " + tileSizeRangeInput.value + " px";
+			}
+
+			lifeSpeedRange.oninput = function(){
+				lifeSpeed = lifeSpeedRange.value;
+				lifeSpeedText.innerHTML = "Life speed: " + ( lifeSpeed / 1000 ).toFixed(2).toString() + " sec.";
 			}
 			
 			createLifeGridButton.onclick = function(){
-				console.log("Creating table...");
+				tileSizeRangeInput.disabled = true;
+				createLifeGridButton.disabled = true;
 				tableDimensions = createTable();
-				console.log("Creating life array");
 				lifeGrid = createLifeArray(tableDimensions);
 				startLifeButton.disabled = false;
 			}
 			
-			document.addEventListener("click", function(e){
+			function setAlive(e){
 				var row = 0;
 				var column = 0;
-				var id = e.target.id;
+				var id = e.id;
 				var gridCoordinates = id.split("_");
 				if(gridCoordinates.length > 1){
 					row = gridCoordinates[0];
@@ -91,49 +125,59 @@
 					document.getElementById(id).setAttribute("style", "background-color: black;");
 					lifeGrid[row][column].state = "alive";
 				}
-			});
+			}
 			
 			startLifeButton.onclick = function(){
-				window.setInterval(function(){
-					var lifeGridCopy = createLifeArray(tableDimensions);
-					for(i = 0; i < lifeGrid.length; i++){
-						for(j = 0; j < lifeGrid[i].length; j++){
-							var neighborCount = countCellNeighbors(i, j);
-							console.log(neighborCount);
-							if(lifeGrid[i][j].state == "alive"){
-								if(neighborCount < 2){
-									//Dies
-									lifeGridCopy[i][j].state = "dead";
-									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
-								}else if((neighborCount == 2) || (neighborCount == 3)){
-									//Lives
-									lifeGridCopy[i][j].state = "alive";
-									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
-								}else if(neighborCount > 3){
-									//Dies
-									lifeGridCopy[i][j].state = "dead";
-									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
-								}
-							}else if(lifeGrid[i][j].state == "dead"){
-								if(neighborCount == 3){
-									//Becomes alive
-									lifeGridCopy[i][j].state = "alive";
-									// document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
-								}
+				stop = false;
+				stopLifeButton.disabled = false;
+				startLifeButton.disabled = true;
+				createLifeGridButton.disabled = true;
+				life();
+			}
+
+			stopLifeButton.onclick = function(){
+				stopLifeButton.disabled = true;
+				startLifeButton.disabled = false;
+				stop = true;
+			}
+
+			function life(){
+				var lifeGridCopy = createLifeArray(tableDimensions);
+				for(i = 0; i < lifeGrid.length; i++){
+					for(j = 0; j < lifeGrid[i].length; j++){
+						var neighborCount = countCellNeighbors(i, j);
+						if(lifeGrid[i][j].state == "alive"){
+							if(neighborCount < 2){
+								//Dies
+								lifeGridCopy[i][j].state = "dead";
+							}else if((neighborCount == 2) || (neighborCount == 3)){
+								//Lives
+								lifeGridCopy[i][j].state = "alive";
+							}else if(neighborCount > 3){
+								//Dies
+								lifeGridCopy[i][j].state = "dead";
+							}
+						}else if(lifeGrid[i][j].state == "dead"){
+							if(neighborCount == 3){
+								//Becomes alive
+								lifeGridCopy[i][j].state = "alive";
 							}
 						}
 					}
-					lifeGrid = lifeGridCopy.slice();
-					for(i = 0; i < lifeGrid.length; i++){
-						for(j = 0; j < lifeGrid[i].length; j++){
-							if(lifeGrid[i][j].state == "alive"){
-								document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
-							}else if(lifeGrid[i][j].state == "dead"){
-								document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
-							}
+				}
+				lifeGrid = lifeGridCopy.slice();
+				for(i = 0; i < lifeGrid.length; i++){
+					for(j = 0; j < lifeGrid[i].length; j++){
+						if(lifeGrid[i][j].state == "alive"){
+							document.getElementById(i + "_" + j).setAttribute("style", "background-color: black;");
+						}else if(lifeGrid[i][j].state == "dead"){
+							document.getElementById(i + "_" + j).setAttribute("style", "background-color: white;");
 						}
 					}
-				}, 200);
+				}
+				if(!stop){
+					window.setTimeout(life, lifeSpeed);
+				}
 			}
 			
 			function countCellNeighbors(row, column){
@@ -179,7 +223,9 @@
 			}
 			
 			window.onload = function(){
-				tileSizeText.innerHTML = "Tile size:" + tileSizeValue.value + "px";
+				tileSizeText.innerHTML = "Tile size: " + tileSizeRangeInput.value + " px";
+				lifeSpeed = lifeSpeedRange.value;
+				lifeSpeedText.innerHTML = "Life speed: " + ( lifeSpeed / 1000 ).toFixed(2).toString()  + " sec.";
 			}
 
 			function createTable(){
@@ -187,13 +233,14 @@
 				var tableRow = document.createElement("tr");
 				var tableRowCell = document.createElement("td"); 
 				var tableMeasurements = setTableDivHeight();
-				var cellsWide = Math.floor(tableMeasurements.width / tileSizeValue.value);
-				var cellsHigh = Math.floor(tableMeasurements.height / tileSizeValue.value);
+				var cellsWide = Math.floor(tableMeasurements.width / tileSizeRangeInput.value);
+				var cellsHigh = Math.floor(tableMeasurements.height / tileSizeRangeInput.value);
 				for(i = 0; i < cellsHigh; i++){
 					for(j = 0; j < cellsWide; j++){
 						tableRowCell.setAttribute("id", i + "_" + j);
-						tableRowCell.setAttribute("height", tileSizeValue.value);
-						tableRowCell.setAttribute("width", tileSizeValue.value);
+						tableRowCell.setAttribute("onclick", "setAlive(this)");
+						tableRowCell.setAttribute("height", tileSizeRangeInput.value);
+						tableRowCell.setAttribute("width", tileSizeRangeInput.value);
 						tableRow.appendChild(tableRowCell);
 						tableRowCell = document.createElement("td"); 
 					}
